@@ -3,7 +3,7 @@ const { SnsAccount } = require("../models/snsAccount");
 const { SnsProfile } = require("../models/snsProfile");
 const puppeteer = require("puppeteer");
 
-module.exports.instagramScraping = async () => {
+module.exports.instagramFollowScraping = async () => {
     console.log("START INSTAGRAM SCRAPING.");
     await connect();
 
@@ -93,7 +93,10 @@ module.exports.instagramScraping = async () => {
             uniqueFollowAccount.map((follow) => ({
                 updateOne: {
                     filter: { path: `https://www.instagram.com${follow}` },
-                    update: { path: `https://www.instagram.com${follow}` },
+                    update: {
+                        path: `https://www.instagram.com${follow}`,
+                        snsName: "instagram",
+                    },
                     upsert: true,
                 },
             }))
@@ -103,6 +106,6 @@ module.exports.instagramScraping = async () => {
         console.log("error:", error);
     }
 
-    console.log("End INSTAGRAM SCRAPING.");
+    console.log("END INSTAGRAM SCRAPING.");
     disconnect();
 };
