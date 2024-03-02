@@ -1,6 +1,7 @@
 const { connect, disconnect } = require("../db");
 const { SnsAccount } = require("../models/snsAccount");
 const { SnsProfile } = require("../models/snsProfile");
+const { FollowRelation } = require("../models/followRelation");
 const puppeteer = require("puppeteer");
 
 module.exports.instagramFollowScraping = async () => {
@@ -11,7 +12,7 @@ module.exports.instagramFollowScraping = async () => {
         const accountList = await SnsAccount.find({
             "instagram.status": "complete",
         })
-            .select("instagram")
+            .select(["instagram", "userId"])
             .lean();
 
         console.log("accountList:", accountList);
@@ -61,46 +62,75 @@ module.exports.instagramFollowScraping = async () => {
                     lastScrollHeight = currentScrollHeight;
                 }
             });
-        }
 
-        const hrefs = await page.evaluate(() => {
-            const linkElements = document.querySelectorAll(
-                "div[style='height: auto; overflow: hidden auto;'] a"
+            const hrefs = await page.evaluate(() => {
+                const linkElements = document.querySelectorAll(
+                    "div[style='height: auto; overflow: hidden auto;'] a"
+                );
+
+                const hrefArray = [];
+                linkElements.forEach((link) => {
+                    hrefArray.push(link.getAttribute("href"));
+                });
+
+                return hrefArray;
+            });
+            console.log("hrefs:", hrefs);
+
+            const uniqueFollowAccount = hrefs.reduce(
+                (followList, followAccount) => {
+                    if (followList.indexOf(followAccount) < 0) {
+                        followList.push(followAccount);
+                    }
+                    return followList;
+                },
+                []
+            );
+            console.log("uniqueFollowAccount:", uniqueFollowAccount);
+
+            await SnsProfile.bulkWrite(
+                uniqueFollowAccount.map((follow) => ({
+                    updateOne: {
+                        filter: { path: `https://www.instagram.com${follow}` },
+                        update: {
+                            path: `https://www.instagram.com${follow}`,
+                            snsName: "instagram",
+                        },
+                        upsert: true,
+                    },
+                }))
             );
 
-            const hrefArray = [];
-            linkElements.forEach((link) => {
-                hrefArray.push(link.getAttribute("href"));
-            });
-
-            return hrefArray;
-        });
-        console.log("hrefs:", hrefs);
-
-        const uniqueFollowAccount = hrefs.reduce(
-            (followList, followAccount) => {
-                if (followList.indexOf(followAccount) < 0) {
-                    followList.push(followAccount);
-                }
-                return followList;
-            },
-            []
-        );
-
-        console.log("uniqueFollowAccount:", uniqueFollowAccount);
-
-        await SnsProfile.bulkWrite(
-            uniqueFollowAccount.map((follow) => ({
-                updateOne: {
-                    filter: { path: `https://www.instagram.com${follow}` },
-                    update: {
-                        path: `https://www.instagram.com${follow}`,
-                        snsName: "instagram",
-                    },
-                    upsert: true,
+            const snsProfileList = await SnsProfile.find({
+                path: {
+                    $in: uniqueFollowAccount.map(
+                        (follow) => `https://www.instagram.com${follow}`
+                    ),
                 },
-            }))
-        );
+            })
+                .select(["_id"])
+                .lean();
+
+            await FollowRelation.bulkWrite(
+                snsProfileList.map((snsProfile) => ({
+                    updateOne: {
+                        filter: {
+                            userId: account.userId,
+                            snsName: "instagram",
+                            followId: snsProfile._id,
+                        },
+                        update: {
+                            userId: account.userId,
+                            snsName: "instagram",
+                            followId: snsProfile._id,
+                            updatedAt: new Date(),
+                        },
+                        upsert: true,
+                    },
+                }))
+            );
+        }
+
         console.log("완료");
     } catch (error) {
         console.log("error:", error);
