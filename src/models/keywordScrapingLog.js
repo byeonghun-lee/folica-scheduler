@@ -12,6 +12,9 @@ const keywordScrapingLogSchema = new Schema({
     },
     userId: { type: mongoose.Types.ObjectId, required: true, ref: "Auth" },
     action: { type: String, enum: ["create", "addScrapingData"] },
+    displayedList: [
+        { _id: false, url: { type: String }, rank: { type: Number } },
+    ],
     createdAt: { type: Date, default: () => dayjs().toDate() },
 });
 
