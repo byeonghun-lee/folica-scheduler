@@ -74,16 +74,32 @@ module.exports.naverBlogKeywordScraping = async () => {
                                 blog.querySelector(blogContentTitle).innerText;
                             const userBlogContentDesc =
                                 blog.querySelector(blogContentDesc).innerText;
+                            const element = blog.getBoundingClientRect();
 
                             return {
                                 userBlogUrl,
                                 userBlogContentUrl,
                                 userBlogContentTitle,
                                 userBlogContentDesc,
+                                element: {
+                                    bottom: element.bottom,
+                                    height: element.height,
+                                    left: element.left,
+                                    right: element.right,
+                                    top: element.top,
+                                    width: element.width,
+                                    x: element.x,
+                                    y: element.y,
+                                },
                             };
                         });
                 },
-                { blogListPath, blogMainUrl, blogContentTitle, blogContentDesc }
+                {
+                    blogListPath,
+                    blogMainUrl,
+                    blogContentTitle,
+                    blogContentDesc,
+                }
             );
 
             console.log("blogDataList:", blogDataList);
@@ -117,7 +133,7 @@ module.exports.naverBlogKeywordScraping = async () => {
 
             await DailyKeywordScraping.create({
                 keyword: keywordItem._id,
-                screenShotUrl: uploadImage?.data?.result?.variants[0],
+                screenShotUrl: uploadImage?.data?.result?.variants[1],
                 textContent: blogDataList,
             });
 
