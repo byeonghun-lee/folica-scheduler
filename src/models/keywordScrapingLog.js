@@ -18,7 +18,7 @@ const keywordScrapingLogSchema = new Schema({
     createdAt: { type: Date, default: () => dayjs().toDate() },
 });
 
-module.exports.keywordScrapingLog = mongoose.model(
-    "keywordScrapingLog",
+module.exports.KeywordScrapingLog = mongoose.model(
+    "KeywordScrapingLog",
     keywordScrapingLogSchema
 );

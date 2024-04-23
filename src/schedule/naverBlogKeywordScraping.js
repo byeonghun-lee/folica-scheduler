@@ -10,7 +10,7 @@ dayjs.locale("ko");
 const { connect, disconnect } = require("../db");
 const { Keyword } = require("../models/keyword");
 const { DailyKeywordScraping } = require("../models/dailyKeywordScraping");
-const { KeywordRelation } = require("../models/keywordRelations");
+const { KeywordRelation } = require("../models/keywordRelation");
 const { keywordScrapingLog } = require("../models/keywordScrapingLog");
 
 module.exports.naverBlogKeywordScraping = async () => {
@@ -133,23 +133,9 @@ module.exports.naverBlogKeywordScraping = async () => {
 
             await DailyKeywordScraping.create({
                 keyword: keywordItem._id,
-                screenShotUrl: uploadImage?.data?.result?.variants[1],
+                screenShotUrl: uploadImage?.data?.result?.variants[0],
                 textContent: blogDataList,
             });
-
-            const keywordRelationList = await KeywordRelation.find({
-                keyword: keywordItem._id,
-                isDeleted: false,
-            }).lean();
-            console.log("keywordRelationList:", keywordRelationList);
-
-            await keywordScrapingLog.create(
-                keywordRelationList.map((relationItem) => ({
-                    keywordRelation: relationItem._id,
-                    userId: relationItem.userId,
-                    action: "addScrapingData",
-                }))
-            );
         }
 
         fs.rmSync(folderName, { recursive: true, force: true });
