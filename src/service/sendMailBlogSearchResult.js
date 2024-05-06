@@ -11,6 +11,7 @@ const { Keyword } = require("../models/keyword");
 const { KeywordScrapingLog } = require("../models/keywordScrapingLog");
 
 const sendMail = async () => {
+    console.log("이메일 전송 시작");
     try {
         await connect();
 
@@ -89,7 +90,7 @@ const sendMail = async () => {
                     )}' rel='nofollow noreferrer noopener' target='_balnk'>검색 결과 이미지 보기<a/></p>`
                 );
 
-                if (!keywordRelationItem?.blogList) {
+                if (!keywordRelationItem?.blogList?.length) {
                     emailContents.push(
                         "<p>키워드에 추가하신 블로그가 없습니다.</p>"
                     );
@@ -134,6 +135,7 @@ const sendMail = async () => {
                 Destination: {
                     ToAddresses: ["byeonghun08@gmail.com"],
                     // ToAddresses: [user.email],
+                    BccAddresses: ["info@chickentowel.com"],
                 },
                 Message: {
                     Subject: {
@@ -154,7 +156,7 @@ const sendMail = async () => {
             const result = await client.send(new SendEmailCommand(params));
             console.log("result:", result);
         }
-        console.log("완료");
+        console.log("이메일 전송 완료");
     } catch (error) {
         console.log("Send mail error:", error);
     }
