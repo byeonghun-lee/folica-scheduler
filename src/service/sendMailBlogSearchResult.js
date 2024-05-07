@@ -23,14 +23,9 @@ const sendMail = async () => {
             region: process.env.AWS_REGION,
         });
 
-        const targetUserList = await Auth.find({
-            email: "byeonghun08@gmail.com",
-        })
+        const targetUserList = await Auth.find({ service: "echorank" })
             .select(["_id", "email"])
             .lean();
-        // const targetUserList = await Auth.find({ service: "echorank" })
-        //     .select(["_id", "email"])
-        //     .lean();
 
         console.log("targetUserList", targetUserList);
 
