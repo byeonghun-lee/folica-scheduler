@@ -46,11 +46,19 @@ const sendMail = async () => {
                 .sort({ _id: -1 })
                 .lean();
 
+            if (!keywordRelationList.length) {
+                continue;
+            }
+
             const keywordIdList = keywordRelationList.map(
                 (keywordRelationItem) => keywordRelationItem.keyword
             );
 
             console.log("keywordIdList:", keywordIdList);
+
+            if (!keywordIdList.filter((item) => !!item).length) {
+                continue;
+            }
 
             const dailyScrapingList = await DailyKeywordScraping.find({
                 keyword: { $in: keywordIdList },
@@ -91,34 +99,36 @@ const sendMail = async () => {
                     );
                 }
 
-                const blogAndRankList = keywordRelationItem.blogList.map(
-                    (blogUrl) => {
-                        const rank = targetDailyScraping.textContent.findIndex(
-                            (searchedBlog) =>
-                                searchedBlog.userBlogUrl === blogUrl ||
-                                searchedBlog.userBlogContentUrl === blogUrl
-                        );
+                const blogAndRankList = keywordRelationItem.blogList.length
+                    ? keywordRelationItem.blogList.map((blogUrl) => {
+                          const rank =
+                              targetDailyScraping.textContent.findIndex(
+                                  (searchedBlog) =>
+                                      searchedBlog.userBlogUrl === blogUrl ||
+                                      searchedBlog.userBlogContentUrl ===
+                                          blogUrl
+                              );
 
-                        emailContents.push(
-                            `<p><a href='${blogUrl}' rel='nofollow noreferrer noopener' target='_balnk'>${blogUrl}<a/>: <span>${
-                                rank >= 0
-                                    ? `${rank + 1} 번째 노출됨`
-                                    : "노출 안 됨"
-                            }</span></p>`
-                        );
-                        return {
-                            url: blogUrl,
-                            rank,
-                        };
-                    }
-                );
+                          emailContents.push(
+                              `<p><a href='${blogUrl}' rel='nofollow noreferrer noopener' target='_balnk'>${blogUrl}<a/>: <span>${
+                                  rank >= 0
+                                      ? `${rank + 1} 번째 노출됨`
+                                      : "노출 안 됨"
+                              }</span></p>`
+                          );
+                          return {
+                              url: blogUrl,
+                              rank,
+                          };
+                      })
+                    : [];
 
                 await KeywordScrapingLog.create({
                     keywordRelation: keywordRelationItem._id,
                     userId: keywordRelationItem.userId,
                     action: "addScrapingData",
                     displayedList: blogAndRankList.filter(
-                        (item) => item.rank >= 0
+                        (item) => item?.rank >= 0
                     ),
                 });
             }
