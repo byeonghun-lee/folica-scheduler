@@ -99,7 +99,7 @@ const sendMail = async () => {
                     );
                 }
 
-                const blogAndRankList = keywordRelationItem.blogList.length
+                const blogAndRankList = keywordRelationItem.blogList?.length
                     ? keywordRelationItem.blogList.map((blogUrl) => {
                           const rank =
                               targetDailyScraping.textContent.findIndex(
