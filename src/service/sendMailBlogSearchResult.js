@@ -23,7 +23,9 @@ const sendMail = async () => {
             region: process.env.AWS_REGION,
         });
 
-        const targetUserList = await Auth.find({ service: "echorank" })
+        const targetUserList = await Auth.find({
+            service: "echorank",
+        })
             .select(["_id", "email"])
             .lean();
 
@@ -80,7 +82,6 @@ const sendMail = async () => {
                         scrapingItem.keyword.toString() ===
                         keywordRelationItem.keyword._id.toString()
                 );
-                console.log("Has targetDailyScraping:", !!targetDailyScraping);
 
                 emailContents.push(
                     `<h2>키워드: ${keywordRelationItem.keyword.name}</h2>`
@@ -102,7 +103,7 @@ const sendMail = async () => {
                 const blogAndRankList = keywordRelationItem.blogList?.length
                     ? keywordRelationItem.blogList.map((blogUrl) => {
                           const rank =
-                              targetDailyScraping.textContent.findIndex(
+                              targetDailyScraping?.textContent.findIndex(
                                   (searchedBlog) =>
                                       searchedBlog.userBlogUrl === blogUrl ||
                                       searchedBlog.userBlogContentUrl ===
@@ -111,7 +112,7 @@ const sendMail = async () => {
 
                           emailContents.push(
                               `<p><a href='${blogUrl}' rel='nofollow noreferrer noopener' target='_balnk'>${blogUrl}<a/>: <span>${
-                                  rank >= 0
+                                  typeof rank === "number" && rank >= 0
                                       ? `${rank + 1} 번째 노출됨`
                                       : "노출 안 됨"
                               }</span></p>`
@@ -138,8 +139,8 @@ const sendMail = async () => {
             const params = {
                 Source: "info@chickentowel.com",
                 Destination: {
-                    ToAddresses: ["byeonghun08@gmail.com"],
-                    // ToAddresses: [user.email],
+                    // ToAddresses: ["byeonghun08@gmail.com"],
+                    ToAddresses: [user.email],
                     BccAddresses: ["info@chickentowel.com"],
                 },
                 Message: {
