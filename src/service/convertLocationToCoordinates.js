@@ -51,6 +51,7 @@ const getCoordinates = async (query) => {
                 },
             }
         );
+        console.log("resultData:", result.data);
         const lat = result.data.documents[0].y;
         const lng = result.data.documents[0].x;
 

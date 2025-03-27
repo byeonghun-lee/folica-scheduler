@@ -114,6 +114,7 @@ const getForecast = async ({ alertDaysBefore, alertTime, nx, ny }) => {
         });
 
         console.log("weather:", result);
+        return result;
     } catch (error) {
         console.log("Get Forecast in KMA Error:", error);
         throw new Error(error.message);

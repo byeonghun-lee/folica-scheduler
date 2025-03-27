@@ -7,6 +7,7 @@ dayjs.locale("ko");
 const weatherAlarmSchema = new Schema({
     deviceId: { type: String, required: true },
     isActive: { type: Boolean, default: true },
+    isDeleted: { type: Boolean, default: false },
     type: { type: String, enum: ["weekly", "specific"], required: true },
     specificDate: { type: Date },
     dayOfTheWeek: {
@@ -49,6 +50,13 @@ const weatherAlarmSchema = new Schema({
         },
     },
     createdAt: { type: Date, default: () => dayjs().toDate() },
+});
+
+weatherAlarmSchema.virtual("user", {
+    ref: "WeatherUser",
+    localField: "deviceId",
+    foreignField: "deviceId",
+    justOne: true,
 });
 
 module.exports.WeatherAlarm = mongoose.model(
