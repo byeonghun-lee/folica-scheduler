@@ -15,6 +15,7 @@ const {
 } = require("../service/weatherAlarmService");
 
 module.exports.getForecast = async () => {
+    console.log("START FORECAST.");
     await connect();
 
     try {
