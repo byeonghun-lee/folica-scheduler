@@ -41,9 +41,9 @@ module.exports.generateWeatherPushMessage = (weatherData) => {
         rainText = "강수확률 낮음";
     }
 
-    return `${dayjs(forecastDate).format(
-        "M월 DD일"
-    )} 오전 ${amWeather} / 오후 ${pmWeather}, ${minTemp}~${maxTemp}°, ${rainText}`;
+    return `${dayjs(forecastDate).format("M월 DD일")} ${
+        amWeather === "정보 없음" ? "" : `오전 ${amWeather} /`
+    } 오후 ${pmWeather}, ${minTemp}~${maxTemp}°, ${rainText}`;
 };
 
 module.exports.getNextClosestDay = ({
