@@ -63,8 +63,7 @@ module.exports.getNextClosestDay = ({
 
         if (
             alertDay > todayDayOfWeek ||
-            (alertDay === todayDayOfWeek &&
-                today.hour() < dayjs(alertTime).hour())
+            (alertDay === todayDayOfWeek && dayjs(alertTime).isAfter(today))
         ) {
             console.log("day:", day);
             return day;

@@ -37,7 +37,7 @@ const weatherAlarmSchema = new Schema({
             },
         ],
     },
-    alertDaysBefore: { type: Number, enum: [1, 2, 3] },
+    alertDaysBefore: { type: Number, enum: [0, 1, 2] },
     alertTime: { type: String },
     nextAlertDate: { type: Date },
     location: { type: String, required: true },

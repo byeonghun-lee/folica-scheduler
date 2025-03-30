@@ -104,7 +104,7 @@ module.exports.getForecast = async () => {
                         });
 
                         const diffDays =
-                            nextAlertDayOfWeek - dayjs().day() <= 0
+                            nextAlertDayOfWeek - dayjs().day() < 0
                                 ? nextAlertDayOfWeek - dayjs().day() + 7
                                 : nextAlertDayOfWeek - dayjs().day();
 
