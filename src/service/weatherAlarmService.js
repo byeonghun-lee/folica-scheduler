@@ -16,12 +16,8 @@ module.exports.generateWeatherPushMessage = (weatherData) => {
         rainShower: "소나기",
     };
 
-    const date = new Date(forecastDate);
-    const month = date.getMonth() + 1;
-    const day = date.getDate();
-
-    const amWeather = weatherMap[weather.am] || "정보 없음";
-    const pmWeather = weatherMap[weather.pm] || "정보 없음";
+    const amWeather = (weather?.am && weatherMap[weather?.am]) || "정보 없음";
+    const pmWeather = (weather?.pm && weatherMap[weather?.pm]) || "정보 없음";
 
     const minTemp = Math.round(temperature.min);
     const maxTemp = Math.round(temperature.max);

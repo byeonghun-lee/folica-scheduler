@@ -1,7 +1,12 @@
 const axios = require("axios");
 const dayjs = require("dayjs");
+const utc = require("dayjs/plugin/utc");
+const timezone = require("dayjs/plugin/timezone");
+
 require("dayjs/locale/ko");
 dayjs.locale("ko");
+dayjs.extend(utc);
+dayjs.extend(timezone);
 
 const KMAForecastUrl =
     "http://apis.data.go.kr/1360000/VilageFcstInfoService_2.0/getVilageFcst";
@@ -38,7 +43,8 @@ const getForecast = async ({ alertDaysBefore, alertTime, nx, ny }) => {
     const alertBaseTime = baseTimes
         .filter(
             (baseTime) =>
-                Number(baseTime) <= Number(dayjs(alertTime).format("HHmm"))
+                Number(baseTime) <=
+                Number(dayjs(alertTime).tz("Asia/Seoul").format("HHmm"))
         )
         .pop();
     const alertBaseDate = dayjs()
@@ -47,18 +53,13 @@ const getForecast = async ({ alertDaysBefore, alertTime, nx, ny }) => {
 
     console.log("alertBaseDate:", alertBaseDate);
     console.log("alertTime:", alertTime);
-    console.log("alertBaseTime:", alertBaseTime);
 
     const searchQuery = {
         serviceKey: process.env.KMA_SERVICE_KEY,
         numOfRows: 1000,
         dataType: "JSON",
         base_date: dayjs().format("YYYYMMDD"),
-        base_time: baseTimes
-            .filter(
-                (baseTime) => Number(baseTime) <= Number(dayjs().format("HHmm"))
-            )
-            .pop(),
+        base_time: alertBaseTime,
         nx,
         ny,
     };
@@ -68,46 +69,58 @@ const getForecast = async ({ alertDaysBefore, alertTime, nx, ny }) => {
             params: searchQuery,
         });
 
-        data.response.body.items.item.forEach((item) => {
+        const items = data.response.body.items.item;
+
+        const itemsByDate = items.filter(
+            (item) => item.fcstDate === alertBaseDate
+        );
+
+        const amCandidates = ["0600", "0900", "1200"];
+        const pmCandidates = ["1500", "1800", "2100"];
+
+        const getLatestTime = (candidates) =>
+            [...candidates]
+                .reverse()
+                .find((t) => itemsByDate.some((item) => item.fcstTime === t));
+
+        const amTime = getLatestTime(amCandidates);
+        const pmTime = getLatestTime(pmCandidates);
+
+        console.log("AM 기준 시간:", amTime, "| PM 기준 시간:", pmTime);
+
+        itemsByDate.forEach((item) => {
             if (item.fcstDate === alertBaseDate) {
                 const { fcstTime, category, fcstValue } = item;
 
+                if (category === tempMax) result.tempMax = fcstValue;
+                if (category === tempMin) result.tempMin = fcstValue;
+
+                const timeKey =
+                    fcstTime === amTime
+                        ? "am"
+                        : fcstTime === pmTime
+                        ? "pm"
+                        : null;
+
+                if (!timeKey) return;
+
                 switch (category) {
-                    case tempMax:
-                        result.tempMax = fcstValue;
-                        break;
-
-                    case tempMin:
-                        result.tempMin = fcstValue;
-                        break;
-
                     case precipType:
-                        if (
-                            ["0900", "1800"].includes(fcstTime) &&
-                            fcstValue !== "0"
-                        ) {
+                        if (fcstValue !== "0") {
                             result.precipType ??= {};
-                            result.precipType[
-                                fcstTime === "0900" ? "am" : "pm"
-                            ] = precipTypeValues[fcstValue];
+                            result.precipType[timeKey] =
+                                precipTypeValues[fcstValue];
                         }
                         break;
 
                     case sky:
-                        if (["0900", "1800"].includes(fcstTime)) {
-                            result.sky ??= {};
-                            result.sky[fcstTime === "0900" ? "am" : "pm"] =
-                                skyValues[fcstValue];
-                        }
+                        result.sky ??= {};
+                        result.sky[timeKey] = skyValues[fcstValue];
                         break;
 
                     case precipProb:
-                        if (["0900", "1800"].includes(fcstTime)) {
-                            result.precipProb ??= {};
-                            result.precipProb[
-                                fcstTime === "0900" ? "am" : "pm"
-                            ] = fcstValue;
-                        }
+                        result.precipProb ??= {};
+                        result.precipProb[timeKey] = fcstValue;
                         break;
                 }
             }

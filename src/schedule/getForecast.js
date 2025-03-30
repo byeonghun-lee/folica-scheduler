@@ -66,12 +66,12 @@ module.exports.getForecast = async () => {
                         max: weatherData.tempMax,
                     },
                     weather: {
-                        am: weatherData.precipType?.am || weatherData.sky.am,
-                        pm: weatherData.precipType?.pm || weatherData.sky.pm,
+                        am: weatherData.precipType?.am || weatherData.sky?.am,
+                        pm: weatherData.precipType?.pm || weatherData.sky?.pm,
                     },
                     precipitationProbability: {
-                        am: weatherData.precipProb.am,
-                        pm: weatherData.precipProb.pm,
+                        am: weatherData.precipProb?.am,
+                        pm: weatherData.precipProb?.pm,
                     },
                     source: "KMA",
                 };
