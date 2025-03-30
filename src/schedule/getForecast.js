@@ -62,8 +62,8 @@ module.exports.getForecast = async () => {
                     location: weatherAlarmItem.location,
                     forecastDate: weatherAlarmItem.nextAlertDate,
                     temperature: {
-                        min: weatherData.tempMin,
-                        max: weatherData.tempMax,
+                        min: weatherData?.tempMin,
+                        max: weatherData?.tempMax,
                     },
                     weather: {
                         am: weatherData.precipType?.am || weatherData.sky?.am,

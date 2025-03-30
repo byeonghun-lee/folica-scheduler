@@ -92,8 +92,12 @@ const getForecast = async ({ alertDaysBefore, alertTime, nx, ny }) => {
             if (item.fcstDate === alertBaseDate) {
                 const { fcstTime, category, fcstValue } = item;
 
-                if (category === tempMax) result.tempMax = fcstValue;
-                if (category === tempMin) result.tempMin = fcstValue;
+                if (category === tempMax) {
+                    result.tempMax = fcstValue;
+                }
+                if (category === tempMin) {
+                    result.tempMin = fcstValue;
+                }
 
                 const timeKey =
                     fcstTime === amTime

@@ -17,16 +17,16 @@ const weatherForecastSchema = new Schema(
             required: true,
         },
         temperature: {
-            min: { type: Number, required: true }, // 최저 기온 (°C)
-            max: { type: Number, required: true }, // 최고 기온 (°C)
+            min: { type: Number }, // 최저 기온 (°C)
+            max: { type: Number }, // 최고 기온 (°C)
         },
         weather: {
             am: { type: String },
-            pm: { type: String, required: true },
+            pm: { type: String },
         },
         precipitationProbability: {
             am: { type: Number },
-            pm: { type: Number, required: true },
+            pm: { type: Number },
         },
         source: {
             type: String, // 데이터 출처

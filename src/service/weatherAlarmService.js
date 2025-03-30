@@ -19,8 +19,15 @@ module.exports.generateWeatherPushMessage = (weatherData) => {
     const amWeather = (weather?.am && weatherMap[weather?.am]) || "정보 없음";
     const pmWeather = (weather?.pm && weatherMap[weather?.pm]) || "정보 없음";
 
-    const minTemp = Math.round(temperature.min);
-    const maxTemp = Math.round(temperature.max);
+    const minTemp =
+        temperature?.min !== undefined && temperature?.min !== null
+            ? Math.round(temperature.min)
+            : undefined;
+
+    const maxTemp =
+        temperature?.max !== undefined && temperature?.max !== null
+            ? Math.round(temperature.max)
+            : undefined;
 
     const amPrecip = precipitationProbability.am;
     const pmPrecip = precipitationProbability.pm;
@@ -37,9 +44,18 @@ module.exports.generateWeatherPushMessage = (weatherData) => {
         rainText = "강수확률 낮음";
     }
 
+    const temp = [];
+
+    if (minTemp) {
+        temp.push(`최저 ${minTemp}°`);
+    }
+    if (maxTemp) {
+        temp.push(`최고 ${maxTemp}°`);
+    }
+
     return `${dayjs(forecastDate).format("M월 DD일")} ${
         amWeather === "정보 없음" ? "" : `오전 ${amWeather} /`
-    } 오후 ${pmWeather}, ${minTemp}~${maxTemp}°, ${rainText}`;
+    } 오후 ${pmWeather}, ${temp.join("~")}, ${rainText}`;
 };
 
 module.exports.getNextClosestDay = ({
