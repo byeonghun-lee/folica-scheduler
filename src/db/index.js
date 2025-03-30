@@ -5,17 +5,25 @@ module.exports.connect = async () => {
         return;
     }
 
-    mongoose.connection.on("error", (error) => {
+    const safeOn = (event, handler) => {
+        if (mongoose.connection.listenerCount(event) === 0) {
+            mongoose.connection.on(event, handler);
+        }
+    };
+
+    safeOn("error", (error) => {
         console.log(`DB connect error:`, error);
     });
-    mongoose.connection.on("disconnected", () => {
+
+    safeOn("disconnected", () => {
         console.log("DB disconnected.");
     });
-    mongoose.connection.on("close", () => {
+
+    safeOn("close", () => {
         console.log("DB close.");
     });
 
-    mongoose.connection.on("connected", () => {
+    safeOn("connected", () => {
         console.log("DB connected!");
     });
 
