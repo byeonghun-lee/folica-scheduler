@@ -59,7 +59,7 @@ const getForecast = async ({ alertDaysBefore, alertTime, nx, ny }) => {
         numOfRows: 1000,
         dataType: "JSON",
         base_date: dayjs().format("YYYYMMDD"),
-        base_time: alertBaseTime,
+        base_time: "0200",
         nx,
         ny,
     };
