@@ -44,89 +44,95 @@ module.exports.getForecast = async () => {
             const weatherAlarmItem = weatherAlarmList[index];
 
             if (!weatherAlarmItem.locationCoordinates.x) {
-                const coorinates = await getCoordinates(
+                const coordinates = await getCoordinates(
                     weatherAlarmItem.location
                 );
-                console.log("coorinates:", coorinates);
+                console.log("coordinates:", coordinates);
 
-                const weatherData = await getForecast({
-                    alertDaysBefore: weatherAlarmItem.alertDaysBefore,
-                    alertTime: weatherAlarmItem.alertTime,
-                    nx: coorinates.x,
-                    ny: coorinates.y,
+                weatherAlarmItem.locationCoordinates = {
+                    x: coordinates.x,
+                    y: coordinates.y,
+                    location: {
+                        type: "Ponint",
+                        coordinates: [coordinates.lng, coordinates.lat],
+                    },
+                };
+            }
+
+            const weatherData = await getForecast({
+                alertDaysBefore: weatherAlarmItem.alertDaysBefore,
+                alertTime: weatherAlarmItem.alertTime,
+                nx: weatherAlarmItem.locationCoordinates.x,
+                ny: weatherAlarmItem.locationCoordinates.y,
+            });
+
+            const forecast = {
+                deviceId: weatherAlarmItem.deviceId,
+                weatherAlarm: weatherAlarmItem._id,
+                location: weatherAlarmItem.location,
+                forecastDate: weatherAlarmItem.nextAlertDate,
+                temperature: {
+                    min: weatherData?.tempMin,
+                    max: weatherData?.tempMax,
+                },
+                weather: {
+                    am: weatherData.precipType?.am || weatherData.sky?.am,
+                    pm: weatherData.precipType?.pm || weatherData.sky?.pm,
+                },
+                precipitationProbability: {
+                    am: weatherData.precipProb?.am,
+                    pm: weatherData.precipProb?.pm,
+                },
+                source: "KMA",
+            };
+
+            try {
+                await WeatherForecast.create(forecast);
+
+                const message = generateWeatherPushMessage(forecast);
+                console.log("message:", message);
+
+                await sendPushNotification({
+                    token: weatherAlarmItem.user?.token,
+                    title: `${weatherAlarmItem.location} 예보`,
+                    body: message,
+                    data: {
+                        screen: "Noti",
+                    },
                 });
 
-                const forecast = {
-                    deviceId: weatherAlarmItem.deviceId,
-                    weatherAlarm: weatherAlarmItem._id,
-                    location: weatherAlarmItem.location,
-                    forecastDate: weatherAlarmItem.nextAlertDate,
-                    temperature: {
-                        min: weatherData?.tempMin,
-                        max: weatherData?.tempMax,
-                    },
-                    weather: {
-                        am: weatherData.precipType?.am || weatherData.sky?.am,
-                        pm: weatherData.precipType?.pm || weatherData.sky?.pm,
-                    },
-                    precipitationProbability: {
-                        am: weatherData.precipProb?.am,
-                        pm: weatherData.precipProb?.pm,
-                    },
-                    source: "KMA",
-                };
+                console.log(
+                    `Success send noti. device ID: ${weatherAlarmItem.user?.deviceId}`
+                );
 
-                try {
-                    await WeatherForecast.create(forecast);
-
-                    const message = generateWeatherPushMessage(forecast);
-                    console.log("message:", message);
-
-                    await sendPushNotification({
-                        token: weatherAlarmItem.user?.token,
-                        title: `${weatherAlarmItem.location} 예보`,
-                        body: message,
-                        data: {
-                            screen: "Noti",
-                        },
+                if (weatherAlarmItem.dayOfTheWeek?.length > 0) {
+                    const nextAlertDayOfWeek = getNextClosestDay({
+                        baseDays: weatherAlarmItem.nextAlertDate,
+                        days: weatherAlarmItem.dayOfTheWeek,
+                        alertDaysBefore: weatherAlarmItem.alertDaysBefore,
+                        alertTime: weatherAlarmItem.alertTime,
                     });
 
-                    console.log(
-                        `Success send noti. device ID: ${weatherAlarmItem.user?.deviceId}`
-                    );
+                    const diffDays =
+                        nextAlertDayOfWeek - dayjs().day() < 0
+                            ? nextAlertDayOfWeek - dayjs().day() + 7
+                            : nextAlertDayOfWeek - dayjs().day();
 
-                    if (weatherAlarmItem.dayOfTheWeek?.length > 0) {
-                        const nextAlertDayOfWeek = getNextClosestDay({
-                            baseDays: weatherAlarmItem.nextAlertDate,
-                            days: weatherAlarmItem.dayOfTheWeek,
-                            alertDaysBefore: weatherAlarmItem.alertDaysBefore,
-                            alertTime: weatherAlarmItem.alertTime,
-                        });
-
-                        const diffDays =
-                            nextAlertDayOfWeek - dayjs().day() < 0
-                                ? nextAlertDayOfWeek - dayjs().day() + 7
-                                : nextAlertDayOfWeek - dayjs().day();
-
-                        weatherAlarmItem.nextAlertDate = dayjs()
-                            .add(
-                                diffDays - weatherAlarmItem.alertDaysBefore,
-                                "day"
-                            )
-                            .hour(dayjs(weatherAlarmItem.alertTime).hour())
-                            .minute(dayjs(weatherAlarmItem.alertTime).minute())
-                            .startOf("second")
-                            .toDate();
-                    } else {
-                        weatherAlarmItem.isActive = false;
-                    }
-
-                    await weatherAlarmItem.save();
-                    console.log("Saved weather alarm.");
-                } catch (messageError) {
-                    console.log("Message Error:", messageError);
-                    console.log("target:", weatherAlarmItem);
+                    weatherAlarmItem.nextAlertDate = dayjs()
+                        .add(diffDays - weatherAlarmItem.alertDaysBefore, "day")
+                        .hour(dayjs(weatherAlarmItem.alertTime).hour())
+                        .minute(dayjs(weatherAlarmItem.alertTime).minute())
+                        .startOf("second")
+                        .toDate();
+                } else {
+                    weatherAlarmItem.isActive = false;
                 }
+
+                await weatherAlarmItem.save();
+                console.log("Saved weather alarm.");
+            } catch (messageError) {
+                console.log("Message Error:", messageError);
+                console.log("target:", weatherAlarmItem);
             }
         }
         console.log("END FORECAST.");
