@@ -38,15 +38,38 @@ const precipTypeValues = {
     4: "rainShower",
 };
 
+const fetchKMAForecastData = async ({
+    nx,
+    ny,
+    baseDate = dayjs().format("YYYYMMDD"),
+    baseTime,
+}) => {
+    const searchQuery = {
+        serviceKey: process.env.KMA_SERVICE_KEY,
+        numOfRows: 1000,
+        dataType: "JSON",
+        base_date: baseDate,
+        base_time: baseTime,
+        nx,
+        ny,
+    };
+
+    const { data } = await axios.get(KMAForecastUrl, {
+        params: searchQuery,
+    });
+
+    return data.response.body.items.item;
+};
+
 const getForecast = async ({ alertDaysBefore, alertTime, nx, ny }) => {
     const result = {};
-    const alertBaseTime = baseTimes
-        .filter(
-            (baseTime) =>
-                Number(baseTime) <=
-                Number(dayjs(alertTime).tz("Asia/Seoul").format("HHmm"))
-        )
-        .pop();
+    // const alertBaseTime = baseTimes
+    //     .filter(
+    //         (baseTime) =>
+    //             Number(baseTime) <=
+    //             Number(dayjs(alertTime).tz("Asia/Seoul").format("HHmm"))
+    //     )
+    //     .pop();
     const alertBaseDate = dayjs()
         .add(alertDaysBefore, "day")
         .format("YYYYMMDD");
@@ -65,11 +88,7 @@ const getForecast = async ({ alertDaysBefore, alertTime, nx, ny }) => {
     };
 
     try {
-        const { data } = await axios.get(`${KMAForecastUrl}`, {
-            params: searchQuery,
-        });
-
-        const items = data.response.body.items.item;
+        const items = await fetchKMAForecastData({ nx, ny, baseTime: "0200" });
 
         const itemsByDate = items.filter(
             (item) => item.fcstDate === alertBaseDate
@@ -138,6 +157,107 @@ const getForecast = async ({ alertDaysBefore, alertTime, nx, ny }) => {
     }
 };
 
+const getHourlyForecastFromNow = async ({ nx, ny }) => {
+    const alertBaseTime = baseTimes
+        .filter(
+            (baseTime) =>
+                Number(baseTime) <=
+                Number(dayjs().tz("Asia/Seoul").format("HHmm"))
+        )
+        .pop();
+
+    console.log("alertBaseTime:", alertBaseTime);
+
+    const items = await fetchKMAForecastData({
+        nx,
+        ny,
+        baseDate:
+            !alertBaseTime && dayjs().subtract(1, "day").format("YYYYMMDD"),
+        baseTime: alertBaseTime || "2300",
+    });
+
+    const now = dayjs().tz("Asia/Seoul").second(0).millisecond(0);
+    const hourlyForecastMap = {};
+
+    // 예보 항목 정리
+    for (const item of items) {
+        const date = item.fcstDate;
+        const time = item.fcstTime;
+        const dateTime = dayjs
+            .tz(`${date} ${time}`, "YYYYMMDD HHmm", "Asia/Seoul")
+            .toDate();
+
+        if (!hourlyForecastMap[dateTime]) {
+            hourlyForecastMap[dateTime] = {};
+        }
+
+        hourlyForecastMap[dateTime][item.category] = item.fcstValue;
+    }
+
+    const sortedForecasts = Object.entries(hourlyForecastMap)
+        .map(([time, data]) => ({
+            time: new Date(time),
+            temperature: data.TMP ? Number(data.TMP) : null,
+            weather:
+                data.PTY === "0"
+                    ? data.SKY
+                        ? skyValues[data.SKY]
+                        : null
+                    : precipTypeValues[data.PTY],
+            precipitationProbability: data.POP ? Number(data.POP) : null,
+        }))
+        .sort((a, b) => new Date(a.time) - new Date(b.time));
+
+    // 보간
+    const forecast24h = [];
+    for (let i = 0; i < 24; i++) {
+        const targetTime = now.add(i, "hour");
+
+        // 이전, 다음 예보 찾기
+        const before = sortedForecasts
+            .slice()
+            .reverse()
+            .find((f) => dayjs(f.time).isBefore(targetTime));
+        const after = sortedForecasts.find((f) =>
+            dayjs(f.time).isAfter(targetTime)
+        );
+
+        // 보간
+        const interpolate = ({ before, after, ratio }) => {
+            if (before == null || after == null) return null;
+            return Math.round((1 - ratio) * before + ratio * after);
+        };
+
+        const interpolateRatio =
+            before && after
+                ? (targetTime - dayjs(before.time)) /
+                  (dayjs(after.time) - dayjs(before.time))
+                : 0;
+
+        forecast24h.push({
+            time: targetTime.toDate(),
+            temperature: interpolate({
+                before: before?.temperature,
+                after: after?.temperature,
+                ratio: interpolateRatio,
+            }),
+            precipitationProbability: interpolate({
+                before: before?.precipitationProbability,
+                after: after?.precipitationProbability,
+                ratio: interpolateRatio,
+            }),
+            weather:
+                interpolateRatio < 0.5
+                    ? before?.weather ?? after?.weather
+                    : after?.weather ?? before?.weather,
+        });
+    }
+
+    // console.log("forecast24h:", forecast24h);
+    return forecast24h;
+};
+
 module.exports = {
     getForecast,
+    getHourlyForecastFromNow,
 };

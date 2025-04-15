@@ -49,6 +49,15 @@ const weatherAlarmSchema = new Schema({
             coordinates: { type: [Number] },
         },
     },
+    forecast24h: [
+        {
+            _id: false,
+            time: { type: Date },
+            temperature: { type: Number },
+            weather: { type: String },
+            precipitationProbability: { type: Number },
+        },
+    ],
     createdAt: { type: Date, default: () => dayjs().toDate() },
 });
 
