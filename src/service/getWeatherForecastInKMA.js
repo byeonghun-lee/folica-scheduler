@@ -38,17 +38,12 @@ const precipTypeValues = {
     4: "rainShower",
 };
 
-const fetchKMAForecastData = async ({
-    nx,
-    ny,
-    baseDate = dayjs().format("YYYYMMDD"),
-    baseTime,
-}) => {
+const fetchKMAForecastData = async ({ nx, ny, baseDate, baseTime }) => {
     const searchQuery = {
         serviceKey: process.env.KMA_SERVICE_KEY,
         numOfRows: 1000,
         dataType: "JSON",
-        base_date: baseDate,
+        base_date: baseDate || dayjs().format("YYYYMMDD"),
         base_time: baseTime,
         nx,
         ny,
