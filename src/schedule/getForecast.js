@@ -136,7 +136,7 @@ module.exports.getForecast = async () => {
             }
         }
         console.log("END FORECAST.");
-        disconnect();
+        await disconnect();
     } catch (error) {
         console.log("Get forecast error:", error);
     }

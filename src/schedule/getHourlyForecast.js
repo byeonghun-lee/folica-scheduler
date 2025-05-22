@@ -59,5 +59,5 @@ module.exports.getHourlyForecast = async () => {
         console.log("Get hourly forecast error:", error);
     }
 
-    disconnect();
+    await disconnect();
 };
