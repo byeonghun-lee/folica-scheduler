@@ -34,6 +34,7 @@ module.exports.connect = async () => {
             useUnifiedTopology: true,
         });
 
+        await mongoose.connection.asPromise();
         isConnected = true;
     }
 
