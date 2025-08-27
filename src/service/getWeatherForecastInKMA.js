@@ -49,11 +49,16 @@ const fetchKMAForecastData = async ({ nx, ny, baseDate, baseTime }) => {
         ny,
     };
 
-    const { data } = await axios.get(KMAForecastUrl, {
-        params: searchQuery,
-    });
+    try {
+        const { data } = await axios.get(KMAForecastUrl, {
+            params: searchQuery,
+        });
 
-    return data.response.body.items.item;
+        return data.response.body.items.item;
+    } catch (error) {
+        console.log("Get Forecast in KMA Error:", error);
+        throw new Error(error.message);
+    }
 };
 
 const getForecast = async ({ alertDaysBefore, alertTime, nx, ny }) => {
@@ -219,7 +224,9 @@ const getHourlyForecastFromNow = async ({ nx, ny }) => {
 
         // 보간
         const interpolate = ({ before, after, ratio }) => {
-            if (before == null || after == null) return null;
+            if (before == null && after == null) return null;
+            if (before == null) return after;
+            if (after == null) return before;
             return Math.round((1 - ratio) * before + ratio * after);
         };
 
