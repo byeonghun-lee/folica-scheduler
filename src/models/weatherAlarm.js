@@ -58,6 +58,14 @@ const weatherAlarmSchema = new Schema({
             precipitationProbability: { type: Number },
         },
     ],
+    dailyTemperature: [
+        {
+            _id: false,
+            date: { type: Date },
+            min: { type: Number },
+            max: { type: Number },
+        },
+    ],
     updatedAt: { type: Date, default: () => dayjs().toDate() },
     createdAt: { type: Date, default: () => dayjs().toDate() },
 });

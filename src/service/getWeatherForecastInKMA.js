@@ -259,7 +259,55 @@ const getHourlyForecastFromNow = async ({ nx, ny }) => {
     return forecast24h;
 };
 
+const getDailyMinMax = async ({ nx, ny }) => {
+    const now = dayjs().tz("Asia/Seoul");
+    const currentHHmm = Number(now.format("HHmm"));
+
+    // 02시 이전이면 전일 base_date의 "2300" 예보를 사용
+    const baseDate =
+        currentHHmm < 200
+            ? now.subtract(1, "day").format("YYYYMMDD")
+            : now.format("YYYYMMDD");
+    const baseTime = currentHHmm < 200 ? "2300" : "0200";
+
+    console.log("getDailyMinMax baseDate:", baseDate, "baseTime:", baseTime);
+
+    const items = await fetchKMAForecastData({ nx, ny, baseDate, baseTime });
+
+    const today = now.format("YYYYMMDD");
+    const tomorrow = now.add(1, "day").format("YYYYMMDD");
+    const targetDates = [today, tomorrow];
+
+    const dailyTemperature = targetDates.map((date) => {
+        const dateItems = items.filter((item) => item.fcstDate === date);
+        let min = null;
+        let max = null;
+
+        for (const item of dateItems) {
+            if (item.category === tempMin) {
+                min = Number(item.fcstValue);
+            }
+            if (item.category === tempMax) {
+                max = Number(item.fcstValue);
+            }
+        }
+
+        return {
+            date: dayjs
+                .tz(date, "YYYYMMDD", "Asia/Seoul")
+                .startOf("day")
+                .toDate(),
+            min,
+            max,
+        };
+    });
+
+    console.log("dailyTemperature:", dailyTemperature);
+    return dailyTemperature;
+};
+
 module.exports = {
     getForecast,
     getHourlyForecastFromNow,
+    getDailyMinMax,
 };

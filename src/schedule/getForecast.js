@@ -53,7 +53,7 @@ module.exports.getForecast = async () => {
                     x: coordinates.x,
                     y: coordinates.y,
                     location: {
-                        type: "Ponint",
+                        type: "Point",
                         coordinates: [coordinates.lng, coordinates.lat],
                     },
                 };

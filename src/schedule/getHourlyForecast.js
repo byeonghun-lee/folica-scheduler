@@ -1,8 +1,13 @@
+const dayjs = require("dayjs");
+require("dayjs/locale/ko");
+dayjs.locale("ko");
+
 const { connect, disconnect } = require("../db");
 const { WeatherAlarm } = require("../models/weatherAlarm");
 const { getCoordinates } = require("../service/convertLocationToCoordinates");
 const {
     getHourlyForecastFromNow,
+    getDailyMinMax,
 } = require("../service/getWeatherForecastInKMA");
 
 module.exports.getHourlyForecast = async () => {
@@ -39,13 +44,18 @@ module.exports.getHourlyForecast = async () => {
                     x: coordinates.x,
                     y: coordinates.y,
                     location: {
-                        type: "Ponint",
+                        type: "Point",
                         coordinates: [coordinates.lng, coordinates.lat],
                     },
                 };
             }
 
             weatherAlarmItem.forecast24h = await getHourlyForecastFromNow({
+                nx: weatherAlarmItem.locationCoordinates.x,
+                ny: weatherAlarmItem.locationCoordinates.y,
+            });
+
+            weatherAlarmItem.dailyTemperature = await getDailyMinMax({
                 nx: weatherAlarmItem.locationCoordinates.x,
                 ny: weatherAlarmItem.locationCoordinates.y,
             });
