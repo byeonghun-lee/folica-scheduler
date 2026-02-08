@@ -34,36 +34,44 @@ module.exports.getHourlyForecast = async () => {
                 weatherAlarmItem.location,
             );
 
-            if (!weatherAlarmItem.locationCoordinates.x) {
-                const coordinates = await getCoordinates(
-                    weatherAlarmItem.location,
+            try {
+                if (!weatherAlarmItem.locationCoordinates.x) {
+                    const coordinates = await getCoordinates(
+                        weatherAlarmItem.location,
+                    );
+                    console.log("coordinates:", coordinates);
+
+                    weatherAlarmItem.locationCoordinates = {
+                        x: coordinates.x,
+                        y: coordinates.y,
+                        location: {
+                            type: "Point",
+                            coordinates: [coordinates.lng, coordinates.lat],
+                        },
+                    };
+                }
+
+                weatherAlarmItem.forecast24h = await getHourlyForecastFromNow({
+                    nx: weatherAlarmItem.locationCoordinates.x,
+                    ny: weatherAlarmItem.locationCoordinates.y,
+                });
+
+                weatherAlarmItem.dailyTemperature = await getDailyMinMax({
+                    nx: weatherAlarmItem.locationCoordinates.x,
+                    ny: weatherAlarmItem.locationCoordinates.y,
+                });
+
+                weatherAlarmItem.updatedAt = dayjs().toDate();
+
+                await weatherAlarmItem.save();
+                console.log("Saved weather alarm.");
+            } catch (error) {
+                console.log(
+                    `Error processing weather alarm for "${weatherAlarmItem.location}":`,
+                    error.message,
                 );
-                console.log("coordinates:", coordinates);
-
-                weatherAlarmItem.locationCoordinates = {
-                    x: coordinates.x,
-                    y: coordinates.y,
-                    location: {
-                        type: "Point",
-                        coordinates: [coordinates.lng, coordinates.lat],
-                    },
-                };
+                continue;
             }
-
-            weatherAlarmItem.forecast24h = await getHourlyForecastFromNow({
-                nx: weatherAlarmItem.locationCoordinates.x,
-                ny: weatherAlarmItem.locationCoordinates.y,
-            });
-
-            weatherAlarmItem.dailyTemperature = await getDailyMinMax({
-                nx: weatherAlarmItem.locationCoordinates.x,
-                ny: weatherAlarmItem.locationCoordinates.y,
-            });
-
-            weatherAlarmItem.updatedAt = dayjs().toDate();
-
-            await weatherAlarmItem.save();
-            console.log("Saved weather alarm.");
         }
 
         console.log("END HOURLY FORECAST.");

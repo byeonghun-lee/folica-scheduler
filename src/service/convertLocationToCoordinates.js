@@ -1,6 +1,7 @@
 const axios = require("axios");
 
 const kakaoLocalSearchUrl = "https://dapi.kakao.com/v2/local/search/address";
+const kakaoKeywordSearchUrl = "https://dapi.kakao.com/v2/local/search/keyword";
 const RE = 6371.00877; // 지구 반경(km)
 const GRID = 5.0; // 격자 간격(km)
 const SLAT1 = 30.0; // 투영 위도1(degree)
@@ -43,15 +44,30 @@ const convertCoordinatesToXY = ({ lat, lng }) => {
 
 const getCoordinates = async (query) => {
     try {
-        const result = await axios.get(
-            `${kakaoLocalSearchUrl}?query=${query}`,
-            {
-                headers: {
-                    Authorization: `KakaoAK ${process.env.KAKAO_REST_API_KEY}`,
-                },
-            }
-        );
-        console.log("resultData:", result.data);
+        const headers = {
+            Authorization: `KakaoAK ${process.env.KAKAO_REST_API_KEY}`,
+        };
+
+        // 1차: 주소 검색
+        let result = await axios.get(`${kakaoLocalSearchUrl}?query=${query}`, {
+            headers,
+        });
+        console.log("addressSearchResult:", result.data);
+
+        // 2차: 주소 검색 결과 없으면 키워드 검색으로 폴백
+        if (!result.data.documents || result.data.documents.length === 0) {
+            console.log(`주소 검색 결과 없음, 키워드 검색 시도: "${query}"`);
+            result = await axios.get(
+                `${kakaoKeywordSearchUrl}?query=${query}`,
+                { headers },
+            );
+            console.log("keywordSearchResult:", result.data?.documents?.[0]);
+        }
+
+        if (!result.data.documents || result.data.documents.length === 0) {
+            throw new Error(`"${query}"에 대한 검색 결과가 없습니다.`);
+        }
+
         const lat = result.data.documents[0].y;
         const lng = result.data.documents[0].x;
 
