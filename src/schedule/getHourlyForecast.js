@@ -26,12 +26,12 @@ module.exports.getHourlyForecast = async () => {
             const weatherAlarmItem = weatherAlarmList[index];
             console.log(
                 "weatherAlarmItem location: ",
-                weatherAlarmItem.location
+                weatherAlarmItem.location,
             );
 
             if (!weatherAlarmItem.locationCoordinates.x) {
                 const coordinates = await getCoordinates(
-                    weatherAlarmItem.location
+                    weatherAlarmItem.location,
                 );
                 console.log("coordinates:", coordinates);
 
@@ -49,6 +49,8 @@ module.exports.getHourlyForecast = async () => {
                 nx: weatherAlarmItem.locationCoordinates.x,
                 ny: weatherAlarmItem.locationCoordinates.y,
             });
+
+            weatherAlarmItem.updatedAt = dayjs().toDate();
 
             await weatherAlarmItem.save();
             console.log("Saved weather alarm.");
